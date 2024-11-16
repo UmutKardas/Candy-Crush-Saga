@@ -3,6 +3,7 @@
     "com.cysharp.unitask": "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask",
     "com.domybest.mybox": "https://github.com/Deadcows/MyBox.git",
     "com.harumak.addler": "https://github.com/Haruma-K/Addler.git?path=/Assets/Addler",
+    "com.unity.2d.sprite": "1.0.0",
     "com.unity.addressables": "2.2.2",
     "com.unity.ai.navigation": "2.0.4",
     "com.unity.collab-proxy": "2.5.2",
