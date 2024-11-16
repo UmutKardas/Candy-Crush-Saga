@@ -1,16 +1,18 @@
 {
-    "name": "Scopes",
-    "rootNamespace": "",
-    "references": [
-        "GUID:b0214a6008ed146ff8f122a6a9c2f6cc"
-    ],
-    "includePlatforms": [],
-    "excludePlatforms": [],
-    "allowUnsafeCode": false,
-    "overrideReferences": false,
-    "precompiledReferences": [],
-    "autoReferenced": true,
-    "defineConstraints": [],
-    "versionDefines": [],
-    "noEngineReferences": false
+  "name": "Scopes",
+  "rootNamespace": "",
+  "references": [
+    "GUID:b0214a6008ed146ff8f122a6a9c2f6cc",
+    "GUID:993a1ee131f2a4b49ab6adee2849af64",
+    "GUID:c126eae9584b360419bb0ecce352dfdd"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
 }

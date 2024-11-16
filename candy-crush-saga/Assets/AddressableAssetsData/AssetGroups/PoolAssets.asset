@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: PoolAssets
+  m_EditorClassIdentifier: 
+  m_GroupName: PoolAssets
+  m_GUID: c38871a1a1a5dd04a9b291b1baf35459
+  m_SerializeEntries:
+  - m_GUID: 28dbefee4e8f82848b6c76a45decbd4b
+    m_Address: Candy
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  m_ReadOnly: 0
+  m_Settings: {fileID: 11400000, guid: d83cb753e6c940246b38842b3ba12c84, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: 8f9832834b3df0e42a9863f443fdec6d, type: 2}
+    - {fileID: 11400000, guid: 6b57b6ed92ac3c444924a5e49e681c2a, type: 2}
