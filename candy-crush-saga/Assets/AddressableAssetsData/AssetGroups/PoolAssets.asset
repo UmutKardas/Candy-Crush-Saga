@@ -18,7 +18,8 @@ MonoBehaviour:
   - m_GUID: 28dbefee4e8f82848b6c76a45decbd4b
     m_Address: Candy
     m_ReadOnly: 0
-    m_SerializedLabels: []
+    m_SerializedLabels:
+    - default
     FlaggedDuringContentUpdateRestriction: 0
   m_ReadOnly: 0
   m_Settings: {fileID: 11400000, guid: d83cb753e6c940246b38842b3ba12c84, type: 2}
