@@ -11,6 +11,7 @@ namespace GameCore.Managers
 
         [SerializeField] private InputManager inputManager;
         [SerializeField] private GameManager gameManager;
+        [SerializeField] private StrategyManager strategyManager;
 
         #endregion
 
@@ -76,7 +77,7 @@ namespace GameCore.Managers
             await UniTask.WhenAll(DOTweenHelpers.WaitForSequenceCompletion(firstNode.Swap(secondNode)),
                 DOTweenHelpers.WaitForSequenceCompletion(secondNode.Swap(firstNode)));
 
-            if (ShouldRevertSwap())
+            if (strategyManager.CheckMatches(Grid, Rows, Columns).Count == 0)
             {
                 RevertSwap(firstNode, secondNode);
                 return;

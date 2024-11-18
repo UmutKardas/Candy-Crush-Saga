@@ -38,7 +38,6 @@ namespace GameCore.Managers
 
         #endregion
 
-
         #region Public Methods
 
         public void PauseGame()
