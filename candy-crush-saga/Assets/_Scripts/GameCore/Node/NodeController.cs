@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using GameCore.Managers;
 using Interface;
 using UnityEngine;
 using DG.Tweening;
@@ -23,6 +24,7 @@ namespace _Scripts.GameCore.Node
 
         #region Properties
 
+        public CandyType CandyType { get; set; }
         public Vector3 Position { get; private set; }
         public int Row { get; set; }
         public int Column { get; set; }
@@ -33,8 +35,9 @@ namespace _Scripts.GameCore.Node
 
         public void Initialize(int row, int column)
         {
+            CandyType = candyData.GetRandomCandyType();
             SetGridPosition(row, column);
-            SetColor(candyData.GetRandomCandyType());
+            SetColor();
         }
 
         public void SetGridPosition(int row, int column)
@@ -55,9 +58,11 @@ namespace _Scripts.GameCore.Node
 
         #region Private Methods
 
-        private void SetColor(CandyType candyType)
+        private async void SetColor()
         {
-            spriteRenderer.sprite = GetCandyData(candyType).sprite;
+            var assetReference = GetCandyData(CandyType).sprite;
+            var sprite = await AddressableManager.LoadAssetAsync<Sprite>(assetReference);
+            spriteRenderer.sprite = sprite;
         }
 
         private Candy GetCandyData(CandyType candyType)

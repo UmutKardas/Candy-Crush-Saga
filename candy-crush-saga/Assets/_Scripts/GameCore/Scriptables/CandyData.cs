@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.AddressableAssets;
 
 namespace GameCore.Scriptables
 {
@@ -20,7 +21,7 @@ namespace GameCore.Scriptables
     public struct Candy
     {
         public string name;
-        public Sprite sprite;
+        public AssetReference sprite;
         public CandyType type;
     }
 

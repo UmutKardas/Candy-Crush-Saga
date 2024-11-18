@@ -14,20 +14,56 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   candies:
   - name: Red
-    sprite: {fileID: 2071775611, guid: 45b3ea7d93a76f24982e7ec71608bab1, type: 3}
+    sprite:
+      m_AssetGUID: 45b3ea7d93a76f24982e7ec71608bab1
+      m_SubObjectName: c-candies_red
+      m_SubObjectGUID: 
+      m_SubObjectType: UnityEngine.Sprite, UnityEngine.CoreModule, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      m_EditorAssetChanged: 0
     type: 0
   - name: Green
-    sprite: {fileID: -1553545097, guid: 45b3ea7d93a76f24982e7ec71608bab1, type: 3}
+    sprite:
+      m_AssetGUID: 45b3ea7d93a76f24982e7ec71608bab1
+      m_SubObjectName: c-candies_green
+      m_SubObjectGUID: 
+      m_SubObjectType: UnityEngine.Sprite, UnityEngine.CoreModule, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      m_EditorAssetChanged: 0
     type: 1
   - name: Blue
-    sprite: {fileID: -23780689, guid: 45b3ea7d93a76f24982e7ec71608bab1, type: 3}
+    sprite:
+      m_AssetGUID: 45b3ea7d93a76f24982e7ec71608bab1
+      m_SubObjectName: c-candies_blue
+      m_SubObjectGUID: 
+      m_SubObjectType: UnityEngine.Sprite, UnityEngine.CoreModule, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      m_EditorAssetChanged: 0
     type: 2
   - name: Yellow
-    sprite: {fileID: -1254612224, guid: 45b3ea7d93a76f24982e7ec71608bab1, type: 3}
+    sprite:
+      m_AssetGUID: 45b3ea7d93a76f24982e7ec71608bab1
+      m_SubObjectName: c-candies_yellow
+      m_SubObjectGUID: 
+      m_SubObjectType: UnityEngine.Sprite, UnityEngine.CoreModule, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      m_EditorAssetChanged: 0
     type: 3
   - name: Purple
-    sprite: {fileID: 1358504578, guid: 45b3ea7d93a76f24982e7ec71608bab1, type: 3}
+    sprite:
+      m_AssetGUID: 45b3ea7d93a76f24982e7ec71608bab1
+      m_SubObjectName: c-candies_purple
+      m_SubObjectGUID: 
+      m_SubObjectType: UnityEngine.Sprite, UnityEngine.CoreModule, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      m_EditorAssetChanged: 0
     type: 4
   - name: Orange
-    sprite: {fileID: 9300126, guid: 45b3ea7d93a76f24982e7ec71608bab1, type: 3}
+    sprite:
+      m_AssetGUID: 45b3ea7d93a76f24982e7ec71608bab1
+      m_SubObjectName: c-candies_orange
+      m_SubObjectGUID: 
+      m_SubObjectType: UnityEngine.Sprite, UnityEngine.CoreModule, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      m_EditorAssetChanged: 0
     type: 5

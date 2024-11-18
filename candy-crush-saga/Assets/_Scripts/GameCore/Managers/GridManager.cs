@@ -66,7 +66,7 @@ namespace GameCore.Managers
         {
             if (!IsNeighbor(firstNode.Row, firstNode.Column, secondNode.Row, secondNode.Column))
             {
-                Debug.LogError("Nodes are not neighbors");
+                Debug.Log("Nodes are not neighbors");
                 return;
             }
 
