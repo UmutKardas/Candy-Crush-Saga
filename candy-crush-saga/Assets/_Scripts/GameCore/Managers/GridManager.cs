@@ -1,6 +1,7 @@
 using System;
 using Cysharp.Threading.Tasks;
 using Interface;
+using MyBox;
 using UnityEngine;
 
 namespace GameCore.Managers
@@ -59,42 +60,81 @@ namespace GameCore.Managers
             var pooledObject = PoolManager.GetPoolObject(PoolType.Candy);
             var node = pooledObject.Instance;
             node.transform.position = CalculateNodePosition(rows, columns);
-            node.GetComponent<INode>().Initialize(rows, columns);
+            var nodeComponent = node.GetComponent<INode>();
+            nodeComponent.Initialize(rows, columns);
+            nodeComponent.OnReturnToPool = () =>
+            {
+                PoolManager.ReturnPoolObject(PoolType.Candy, pooledObject);
+            };
+
             Grid[rows, columns] = node;
         }
 
         private async void SwapNodes(INode firstNode, INode secondNode)
         {
-            if (!IsNeighbor(firstNode.Row, firstNode.Column, secondNode.Row, secondNode.Column))
+            try
             {
-                Debug.Log("Nodes are not neighbors");
-                return;
-            }
+                if (!IsNeighbor(firstNode.Row, firstNode.Column, secondNode.Row, secondNode.Column))
+                {
 
+                    Debug.Log($"Not a neighbor: {firstNode.Row}, {firstNode.Column} - {secondNode.Row}, {secondNode.Column}");
+                    return;
+                }
+
+                await UniTask.WhenAll(DOTweenHelpers.WaitForSequenceCompletion(firstNode.Swap(secondNode)),
+                    DOTweenHelpers.WaitForSequenceCompletion(secondNode.Swap(firstNode)));
+
+                ToggleNodes(firstNode, secondNode);
+
+                var matches = strategyManager.CheckMatches(Grid, Rows, Columns);
+
+                if (matches is not { Count: > 0 })
+                {
+                    RevertSwap(firstNode, secondNode);
+                    return;
+                }
+
+                matches.ForEach(x =>
+                {
+                    var (row, column) = x;
+                    var node = Grid[row, column].GetComponent<INode>();
+                    node.SetMatch();
+                });
+
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"Error swapping nodes: {e.Message}");
+            }
+        }
+
+        private void ToggleNodes(INode firstNode, INode secondNode)
+        {
             var firstNodeContent = Grid[firstNode.Row, firstNode.Column];
             var secondNodeContent = Grid[secondNode.Row, secondNode.Column];
 
-            await UniTask.WhenAll(DOTweenHelpers.WaitForSequenceCompletion(firstNode.Swap(secondNode)),
-                DOTweenHelpers.WaitForSequenceCompletion(secondNode.Swap(firstNode)));
-
-            if (strategyManager.CheckMatches(Grid, Rows, Columns).Count == 0)
-            {
-                RevertSwap(firstNode, secondNode);
-                return;
-            }
-
-            firstNode.SetGridPosition(GetGridPosition(secondNodeContent).row,
-                GetGridPosition(secondNodeContent).column);
-            secondNode.SetGridPosition(GetGridPosition(firstNodeContent).row, GetGridPosition(firstNodeContent).column);
+            var firstNodeGridPosition = (firstNode.Row, firstNode.Column);
+            var secondNodeGridPosition = (secondNode.Row, secondNode.Column);
 
             Grid[firstNode.Row, firstNode.Column] = secondNodeContent;
             Grid[secondNode.Row, secondNode.Column] = firstNodeContent;
+
+            firstNode.SetGridPosition(secondNodeGridPosition.Row, secondNodeGridPosition.Column);
+            secondNode.SetGridPosition(firstNodeGridPosition.Row, firstNodeGridPosition.Column);
+
+
+
+
+            // Grid[firstNode.Row, firstNode.Column] = secondNode.NodeTransform.gameObject;
+            // Grid[secondNode.Row, secondNode.Column] = firstNode.NodeTransform.gameObject;
         }
+
 
         private void RevertSwap(INode firstNode, INode secondNode)
         {
             firstNode.Swap(firstNode);
             secondNode.Swap(secondNode);
+            ToggleNodes(firstNode, secondNode);
         }
 
         #endregion
@@ -120,8 +160,8 @@ namespace GameCore.Managers
         public void ClearGrid()
         {
             for (var i = 0; i < Rows; i++)
-            for (var j = 0; j < Columns; j++)
-                Grid[i, j] = null;
+                for (var j = 0; j < Columns; j++)
+                    Grid[i, j] = null;
         }
 
         public INode GetNodeAt(int row, int column)
@@ -158,17 +198,12 @@ namespace GameCore.Managers
         private bool IsNeighbor(int firstRow, int firstColumn, int secondRow, int secondColumn)
         {
             return (Mathf.Abs(firstRow - secondRow) == 1 && firstColumn == secondColumn) ||
-                (Mathf.Abs(firstColumn - secondColumn) == 1 && firstRow == secondRow);
+                   (Mathf.Abs(firstColumn - secondColumn) == 1 && firstRow == secondRow);
         }
 
         private bool IsValidCell(int row, int column)
         {
             return row >= 0 && row < Rows && column >= 0 && column < Columns;
-        }
-
-        private bool ShouldRevertSwap()
-        {
-            return false;
         }
 
         public bool HasObjectAt(int row, int column)
