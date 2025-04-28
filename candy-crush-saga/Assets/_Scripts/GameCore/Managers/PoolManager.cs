@@ -39,14 +39,22 @@ namespace GameCore.Managers
 
         private async void InitializePools()
         {
-            foreach (var config in poolConfigs)
+            try
             {
-                var pool = new AddressablePool(config.name).BindTo(gameObject);
-                await pool.WarmupAsync(config.size);
-                PoolsDictionary.Add(config.type, pool);
-            }
+                foreach (var config in poolConfigs)
+                {
+                    var pool = new AddressablePool(config.name).BindTo(gameObject);
+                    await pool.WarmupAsync(config.size);
+                    PoolsDictionary.Add(config.type, pool);
+                }
 
-            PoolCreationCompletionSource.TrySetResult();
+                PoolCreationCompletionSource.TrySetResult();
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"Error initializing pools: {e.Message}");
+                PoolCreationCompletionSource.TrySetException(e);
+            }
         }
 
         #endregion
