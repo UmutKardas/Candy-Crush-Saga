@@ -11,6 +11,9 @@ namespace GameCore.Strategy
         private int _rows, _columns;
         private HashSet<(int, int)> _matchList;
 
+        private const int MinMatchLength = 3;
+
+
         public HashSet<(int, int)> Execute(GameObject[,] grid, int rows, int columns)
         {
             _grid = grid;
@@ -51,7 +54,7 @@ namespace GameCore.Strategy
                 matchPositions.Add((nextNodeValue.Item1, nextNodeValue.Item2));
             }
 
-            if (matchLength < 3) return;
+            if (matchLength < MinMatchLength) return;
             foreach (var pos in matchPositions)
             {
                 _matchList.Add(pos);
