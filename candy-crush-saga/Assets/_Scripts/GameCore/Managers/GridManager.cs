@@ -125,7 +125,7 @@ namespace GameCore.Managers
         private async UniTask HandlePostMatch()
         {
             await DropInactiveNodes();
-            SpawnNewNodesForEmptySpots();
+            await SpawnNewNodesForEmptySpots();
             ValidateMatches().Forget();
         }
 
@@ -184,29 +184,12 @@ namespace GameCore.Managers
             await UniTask.WhenAll(tasks);
         }
 
-        private void SpawnNewNodesForEmptySpots()
+        private UniTask SpawnNewNodesForEmptySpots()
         {
             var destroyedNodes = GetDestroyedNodes();
-            if (destroyedNodes is not { Count: > 0 }) { return; }
+            if (destroyedNodes is not { Count: > 0 }) { return UniTask.CompletedTask; }
             destroyedNodes.ForEach(destroyedNode => { SpawnNodeAt(destroyedNode.Item1, destroyedNode.Item2, true); });
-        }
-
-        private INode GetLastInactiveNodeBelow(int x, int y)
-        {
-            for (var i = 1; i < Columns; i++)
-            {
-                if (y - i < 0) break;
-
-                var nextNode = Grid[x, y - i];
-                if (nextNode == null) break;
-
-                if (!nextNode.TryGetComponent(out INode downNode)) return null;
-                if (downNode.IsActive) break;
-
-                return downNode;
-            }
-
-            return null;
+            return UniTask.CompletedTask;
         }
 
         private List<(int, int)> GetDestroyedNodes()
@@ -229,6 +212,27 @@ namespace GameCore.Managers
             return destroyedNodes;
         }
 
+        private INode GetLastInactiveNodeBelow(int x, int y)
+        {
+            INode lastNode = null;
+            for (var i = 1; i < Columns; i++)
+            {
+                if (y - i < 0) { break; }
+                var nextNode = Grid[x, y - i];
+                if (nextNode == null) { break; }
+
+                if (!nextNode.TryGetComponent(out INode downNode)) { return lastNode; }
+                if (downNode.IsActive)
+                {
+                    break;
+                }
+                lastNode = downNode;
+            }
+
+            return lastNode;
+        }
+
+
         private Vector3 CalculateNodeWorldPosition(int row, int column)
         {
             return new Vector3(row - (Rows - 1) / 2f, column - (Columns - 1) / 2f, 0);
@@ -238,6 +242,15 @@ namespace GameCore.Managers
         {
             return (Mathf.Abs(firstRow - secondRow) == 1 && firstColumn == secondColumn) ||
                    (Mathf.Abs(firstColumn - secondColumn) == 1 && firstRow == secondRow);
+        }
+        #endregion
+
+        #region Public Methods
+
+        public INode TryGetNodeFromMousePosition(Vector3 mousePosition, RaycastHit2D hit2D, LayerMask layerMask)
+        {
+            hit2D = Physics2D.Raycast(mousePosition, Vector2.zero, 0.1f, layerMask);
+            return hit2D.collider != null ? hit2D.collider.GetComponent<INode>() : null;
         }
         #endregion
     }

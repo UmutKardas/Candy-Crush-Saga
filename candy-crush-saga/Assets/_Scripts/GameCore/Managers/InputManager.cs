@@ -13,7 +13,7 @@ namespace GameCore.Managers
         #endregion
 
         #region Serialized Fields
-
+        [SerializeField] private GridManager gridManager;
         [SerializeField] private LayerMask nodeLayer;
 
         #endregion
@@ -47,7 +47,7 @@ namespace GameCore.Managers
         private void HandleNodeClick()
         {
             if (!Input.GetMouseButtonDown(0)) return;
-            var node = GetNodeFromInput();
+            var node = gridManager.TryGetNodeFromMousePosition(GetMousePosition(), _hit, nodeLayer);
             if (node == null) return;
             _firstNode = node;
         }
@@ -55,18 +55,12 @@ namespace GameCore.Managers
         private void HandleNodeRelease()
         {
             if (!Input.GetMouseButtonUp(0)) return;
-            var node = GetNodeFromInput();
+            var node = gridManager.TryGetNodeFromMousePosition(GetMousePosition(), _hit, nodeLayer);
             if (node == null) { return; }
 
             if (_firstNode == null) { return; }
 
             OnNodeSwap?.Invoke(_firstNode, node);
-        }
-
-        private INode GetNodeFromInput()
-        {
-            _hit = Physics2D.Raycast(GetMousePosition(), Vector2.zero, 0.1f, nodeLayer);
-            return _hit.collider != null ? _hit.collider.GetComponent<INode>() : null;
         }
 
         private Vector2 GetMousePosition()
