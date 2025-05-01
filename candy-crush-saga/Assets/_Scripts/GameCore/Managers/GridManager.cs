@@ -1,7 +1,7 @@
 using System;
+using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using Interface;
-using MyBox;
 using UnityEngine;
 
 namespace GameCore.Managers
@@ -28,21 +28,21 @@ namespace GameCore.Managers
 
         private void OnEnable()
         {
-            gameManager.OnGameStart += CreateGrid;
-            inputManager.OnNodeSwap += SwapNodes;
+            gameManager.OnGameStart += InitializeGrid;
+            inputManager.OnNodeSwap += HandleNodeSwap;
         }
 
         private void OnDisable()
         {
-            gameManager.OnGameStart -= CreateGrid;
-            inputManager.OnNodeSwap -= SwapNodes;
+            gameManager.OnGameStart -= InitializeGrid;
+            inputManager.OnNodeSwap -= HandleNodeSwap;
         }
 
         #endregion
 
         #region Private Methods
 
-        private void CreateGrid()
+        private void InitializeGrid()
         {
             Grid = new GameObject[Rows, Columns];
 
@@ -50,16 +50,18 @@ namespace GameCore.Managers
             {
                 for (var j = 0; j < Columns; j++)
                 {
-                    SetupNode(i, j);
+                    SpawnNodeAt(i, j);
                 }
             }
+
+            ValidateMatches().Forget();
         }
 
-        private void SetupNode(int rows, int columns)
+        private void SpawnNodeAt(int rows, int columns, bool isAnimate = false)
         {
             var pooledObject = PoolManager.GetPoolObject(PoolType.Candy);
             var node = pooledObject.Instance;
-            node.transform.position = CalculateNodePosition(rows, columns);
+            node.transform.position = CalculateNodeWorldPosition(rows, columns);
             var nodeComponent = node.GetComponent<INode>();
             nodeComponent.Initialize(rows, columns);
             nodeComponent.OnReturnToPool = () =>
@@ -70,36 +72,23 @@ namespace GameCore.Managers
             Grid[rows, columns] = node;
         }
 
-        private async void SwapNodes(INode firstNode, INode secondNode)
+        private async void HandleNodeSwap(INode firstNode, INode secondNode)
         {
             try
             {
-                if (!IsNeighbor(firstNode.Row, firstNode.Column, secondNode.Row, secondNode.Column))
+                if (!AreNodesAdjacent(firstNode.Row, firstNode.Column, secondNode.Row, secondNode.Column))
                 {
 
                     Debug.Log($"Not a neighbor: {firstNode.Row}, {firstNode.Column} - {secondNode.Row}, {secondNode.Column}");
                     return;
                 }
 
-                await UniTask.WhenAll(DOTweenHelpers.WaitForSequenceCompletion(firstNode.Swap(secondNode)),
-                    DOTweenHelpers.WaitForSequenceCompletion(secondNode.Swap(firstNode)));
+                await UniTask.WhenAll(DOTweenHelpers.WaitForSequenceCompletion(firstNode.Swap(secondNode.Position)),
+                    DOTweenHelpers.WaitForSequenceCompletion(secondNode.Swap(firstNode.Position)));
 
-                ToggleNodes(firstNode, secondNode);
+                SwapNodeReferences(firstNode, secondNode);
 
-                var matches = strategyManager.CheckMatches(Grid, Rows, Columns);
-
-                if (matches is not { Count: > 0 })
-                {
-                    RevertSwap(firstNode, secondNode);
-                    return;
-                }
-
-                matches.ForEach(x =>
-                {
-                    var (row, column) = x;
-                    var node = Grid[row, column].GetComponent<INode>();
-                    node.SetMatch();
-                });
+                await ValidateMatches(null, () => { RevertSwap(firstNode, secondNode); });
 
             }
             catch (Exception e)
@@ -108,109 +97,148 @@ namespace GameCore.Managers
             }
         }
 
-        private void ToggleNodes(INode firstNode, INode secondNode)
+
+        private async UniTask ValidateMatches(Action onComplete = null, Action onFailed = null)
+        {
+            var matches = strategyManager.CheckMatches(Grid, Rows, Columns);
+
+            if (matches is not { Count: > 0 })
+            {
+                onFailed?.Invoke();
+                return;
+            }
+
+            var tasks = new List<UniTask>();
+
+            foreach (var (row, column) in matches)
+            {
+                var node = Grid[row, column].GetComponent<INode>();
+                tasks.Add(node.SetMatch());
+            }
+
+            await UniTask.WhenAll(tasks);
+            await HandlePostMatch();
+            onComplete?.Invoke();
+
+        }
+
+        private async UniTask HandlePostMatch()
+        {
+            await DropInactiveNodes();
+            SpawnNewNodesForEmptySpots();
+            ValidateMatches().Forget();
+        }
+
+        private void RevertSwap(INode firstNode, INode secondNode)
+        {
+            firstNode.Swap(secondNode.Position);
+            secondNode.Swap(firstNode.Position);
+            SwapNodeReferences(firstNode, secondNode);
+        }
+
+        private void SwapNodeReferences(INode firstNode, INode secondNode)
         {
             var firstNodeContent = Grid[firstNode.Row, firstNode.Column];
             var secondNodeContent = Grid[secondNode.Row, secondNode.Column];
 
-            var firstNodeGridPosition = (firstNode.Row, firstNode.Column);
-            var secondNodeGridPosition = (secondNode.Row, secondNode.Column);
+            var firstNodeGridDetail = (firstNode.Row, firstNode.Column);
+            var secondNodeGridDetail = (secondNode.Row, secondNode.Column);
+
+            var firstNodeGridPosition = CalculateNodeWorldPosition(secondNodeGridDetail.Row, secondNodeGridDetail.Column);
+            var secondNodeGridPosition = CalculateNodeWorldPosition(firstNodeGridDetail.Row, firstNodeGridDetail.Column);
 
             Grid[firstNode.Row, firstNode.Column] = secondNodeContent;
             Grid[secondNode.Row, secondNode.Column] = firstNodeContent;
 
-            firstNode.SetGridPosition(secondNodeGridPosition.Row, secondNodeGridPosition.Column);
-            secondNode.SetGridPosition(firstNodeGridPosition.Row, firstNodeGridPosition.Column);
-
-
-
-
-            // Grid[firstNode.Row, firstNode.Column] = secondNode.NodeTransform.gameObject;
-            // Grid[secondNode.Row, secondNode.Column] = firstNode.NodeTransform.gameObject;
+            firstNode.SetGridPosition(secondNodeGridDetail.Row, secondNodeGridDetail.Column, firstNodeGridPosition);
+            secondNode.SetGridPosition(firstNodeGridDetail.Row, firstNodeGridDetail.Column, secondNodeGridPosition);
         }
 
-
-        private void RevertSwap(INode firstNode, INode secondNode)
+        private async UniTask DropInactiveNodes()
         {
-            firstNode.Swap(firstNode);
-            secondNode.Swap(secondNode);
-            ToggleNodes(firstNode, secondNode);
-        }
+            var tasks = new List<UniTask>();
 
-        #endregion
-
-        #region Public Methods
-
-        public void RemoveObjectAt(int row, int column)
-        {
-            if (IsValidCell(row, column)) Grid[row, column] = null;
-        }
-
-        public void ForEachCell(Action<int, int, GameObject> action)
-        {
-            for (var i = 0; i < Rows; i++)
+            for (var x = 0; x < Rows; x++)
             {
-                for (var j = 0; j < Columns; j++)
+                for (var y = 0; y < Columns; y++)
                 {
-                    action?.Invoke(i, j, Grid[i, j]);
+                    var currentNode = Grid[x, y];
+                    if (currentNode == null) { continue; }
+
+                    if (!currentNode.TryGetComponent(out INode node)) { continue; }
+                    if (!node.IsActive) { continue; }
+
+                    var lastInactiveNode = GetLastInactiveNodeBelow(x, y);
+
+                    if (lastInactiveNode == null)
+                    {
+                        continue;
+                    }
+
+                    tasks.Add(DOTweenHelpers.WaitForSequenceCompletion(node.Swap(lastInactiveNode.Position)));
+                    tasks.Add(DOTweenHelpers.WaitForSequenceCompletion(lastInactiveNode.Swap(node.Position)));
+
+                    SwapNodeReferences(node, lastInactiveNode);
                 }
             }
+            await UniTask.WhenAll(tasks);
         }
 
-        public void ClearGrid()
+        private void SpawnNewNodesForEmptySpots()
         {
-            for (var i = 0; i < Rows; i++)
-                for (var j = 0; j < Columns; j++)
-                    Grid[i, j] = null;
+            var destroyedNodes = GetDestroyedNodes();
+            if (destroyedNodes is not { Count: > 0 }) { return; }
+            destroyedNodes.ForEach(destroyedNode => { SpawnNodeAt(destroyedNode.Item1, destroyedNode.Item2, true); });
         }
 
-        public INode GetNodeAt(int row, int column)
+        private INode GetLastInactiveNodeBelow(int x, int y)
         {
-            return IsValidCell(row, column) ? Grid[row, column].GetComponent<INode>() : null;
+            for (var i = 1; i < Columns; i++)
+            {
+                if (y - i < 0) break;
+
+                var nextNode = Grid[x, y - i];
+                if (nextNode == null) break;
+
+                if (!nextNode.TryGetComponent(out INode downNode)) return null;
+                if (downNode.IsActive) break;
+
+                return downNode;
+            }
+
+            return null;
         }
 
-        private Vector3 CalculateNodePosition(int row, int column)
+        private List<(int, int)> GetDestroyedNodes()
+        {
+            var destroyedNodes = new List<(int, int)>();
+
+            for (var x = 0; x < Rows; x++)
+            {
+                for (var y = 0; y < Columns; y++)
+                {
+                    var currentNode = Grid[x, y];
+                    if (currentNode == null) { continue; }
+
+                    if (!currentNode.TryGetComponent(out INode node)) { continue; }
+                    if (node.IsActive) { continue; }
+                    destroyedNodes.Add((x, y));
+                }
+            }
+
+            return destroyedNodes;
+        }
+
+        private Vector3 CalculateNodeWorldPosition(int row, int column)
         {
             return new Vector3(row - (Rows - 1) / 2f, column - (Columns - 1) / 2f, 0);
         }
 
-        private (int row, int column) GetGridPosition(GameObject targetObject)
-        {
-            for (var rowIndex = 0; rowIndex < Rows; rowIndex++)
-            {
-                for (var columnIndex = 0; columnIndex < Columns; columnIndex++)
-                {
-                    if (Grid[rowIndex, columnIndex] == targetObject)
-                    {
-                        return (rowIndex, columnIndex);
-                    }
-                }
-            }
-
-            return (-1, -1);
-        }
-
-        public GameObject GetObjectAt(int row, int column)
-        {
-            return IsValidCell(row, column) ? Grid[row, column] : null;
-        }
-
-        private bool IsNeighbor(int firstRow, int firstColumn, int secondRow, int secondColumn)
+        private bool AreNodesAdjacent(int firstRow, int firstColumn, int secondRow, int secondColumn)
         {
             return (Mathf.Abs(firstRow - secondRow) == 1 && firstColumn == secondColumn) ||
                    (Mathf.Abs(firstColumn - secondColumn) == 1 && firstRow == secondRow);
         }
-
-        private bool IsValidCell(int row, int column)
-        {
-            return row >= 0 && row < Rows && column >= 0 && column < Columns;
-        }
-
-        public bool HasObjectAt(int row, int column)
-        {
-            return IsValidCell(row, column) && Grid[row, column] != null;
-        }
-
         #endregion
     }
 }
