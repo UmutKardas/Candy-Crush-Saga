@@ -8,9 +8,10 @@ namespace GameCore.Managers
     {
         private readonly IStrategy _currentStrategy = new MatchChecker();
 
-        public HashSet<(int, int)> CheckMatches(GameObject[,] grid, int rows, int columns)
+        public List<HashSet<(int, int)>> CheckMatches(GameObject[,] grid, int rows, int columns)
         {
             return _currentStrategy.Execute(grid, rows, columns);
         }
+
     }
 }

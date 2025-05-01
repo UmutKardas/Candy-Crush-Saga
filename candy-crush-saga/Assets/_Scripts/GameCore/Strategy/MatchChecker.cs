@@ -9,17 +9,16 @@ namespace GameCore.Strategy
     {
         private GameObject[,] _grid;
         private int _rows, _columns;
-        private HashSet<(int, int)> _matchList;
+        private List<HashSet<(int, int)>> _matchGroups;
 
         private const int MinMatchLength = 3;
 
-
-        public HashSet<(int, int)> Execute(GameObject[,] grid, int rows, int columns)
+        public List<HashSet<(int, int)>> Execute(GameObject[,] grid, int rows, int columns)
         {
             _grid = grid;
             _rows = rows;
             _columns = columns;
-            _matchList = new HashSet<(int, int)>();
+            _matchGroups = new List<HashSet<(int, int)>>();
 
             for (var x = 0; x < rows; x++)
             {
@@ -27,43 +26,61 @@ namespace GameCore.Strategy
                 {
                     var currentNode = grid[x, y];
                     if (currentNode == null) continue;
-                    if (!currentNode.TryGetComponent(out INode node)) { continue; }
-                    if (!node.IsActive) { continue; }
+                    if (!currentNode.TryGetComponent(out INode node)) continue;
+                    if (!node.IsActive) continue;
+
                     var currentCandyType = node.CandyType;
-                    CheckMatchByType(x, y, currentCandyType, MatchType.Horizontal);
-                    CheckMatchByType(x, y, currentCandyType, MatchType.Vertical);
+
+                    TryAddMatchGroup(x, y, currentCandyType, MatchType.Horizontal);
+                    TryAddMatchGroup(x, y, currentCandyType, MatchType.Vertical);
                 }
             }
 
-            return _matchList;
+            return _matchGroups;
         }
 
-        private void CheckMatchByType(int x, int y, CandyType currentCandyType, MatchType matchType)
+        private void TryAddMatchGroup(int x, int y, CandyType candyType, MatchType matchType)
         {
-            var matchLength = 1;
-            var matchPositions = new HashSet<(int, int)> { (x, y) };
-            var primaryLength = matchType == MatchType.Horizontal ? _columns : _rows;
-            var secondaryLength = matchType == MatchType.Horizontal ? _rows : _columns;
-
-            for (var i = 1; i < primaryLength; i++)
+            var match = new HashSet<(int, int)>
             {
-                if (matchType == MatchType.Horizontal ? x + i >= secondaryLength : y + i >= secondaryLength) break;
-                var nextNodeValue = matchType == MatchType.Horizontal ? (x + i, y) : (x, y + i);
-                var nextNode = _grid[nextNodeValue.Item1, nextNodeValue.Item2];
+                (x, y)
+            };
+
+            int dx = matchType == MatchType.Horizontal ? 1 : 0;
+            int dy = matchType == MatchType.Vertical ? 1 : 0;
+
+            for (int i = 1; ; i++)
+            {
+                int nx = x + dx * i;
+                int ny = y + dy * i;
+
+                if (nx >= _rows || ny >= _columns)
+                    break;
+
+                var nextNode = _grid[nx, ny];
                 if (nextNode == null) break;
-                if (!nextNode.TryGetComponent(out INode nextNodeComponent)) { break; }
+
+                if (!nextNode.TryGetComponent(out INode nextNodeComponent)) break;
                 if (!nextNodeComponent.IsActive) break;
-                if (currentCandyType != nextNodeComponent.CandyType) break;
+                if (nextNodeComponent.CandyType != candyType) break;
 
-                matchLength++;
-                matchPositions.Add((nextNodeValue.Item1, nextNodeValue.Item2));
+                match.Add((nx, ny));
             }
 
-            if (matchLength < MinMatchLength) return;
-            foreach (var pos in matchPositions)
+            if (match.Count >= MinMatchLength && !IsAlreadyAdded(match))
             {
-                _matchList.Add(pos);
+                _matchGroups.Add(match);
             }
+        }
+
+        private bool IsAlreadyAdded(HashSet<(int, int)> match)
+        {
+            foreach (var existing in _matchGroups)
+            {
+                if (existing.Overlaps(match)) return true;
+            }
+            return false;
         }
     }
+
 }
