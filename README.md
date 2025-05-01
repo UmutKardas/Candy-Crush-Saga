@@ -28,7 +28,7 @@
 
 You can watch the game demo below:
 
-[Watch the Candy Crush Saga Clone Demo](Media/CandyCrushSagaClone.mp4)
+[Watch the Candy Crush Saga Clone Demo](https://drive.google.com/file/d/1_YowgDAWZxoXgkuLT3fcGEpb0INXiow-/view?usp=sharing)
 
 ## Installation
 
