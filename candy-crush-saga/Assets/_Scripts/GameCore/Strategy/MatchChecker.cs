@@ -27,7 +27,9 @@ namespace GameCore.Strategy
                 {
                     var currentNode = grid[x, y];
                     if (currentNode == null) continue;
-                    var currentCandyType = currentNode.GetComponent<INode>().CandyType;
+                    if (!currentNode.TryGetComponent(out INode node)) { continue; }
+                    if (!node.IsActive) { continue; }
+                    var currentCandyType = node.CandyType;
                     CheckMatchByType(x, y, currentCandyType, MatchType.Horizontal);
                     CheckMatchByType(x, y, currentCandyType, MatchType.Vertical);
                 }
@@ -48,7 +50,10 @@ namespace GameCore.Strategy
                 if (matchType == MatchType.Horizontal ? x + i >= secondaryLength : y + i >= secondaryLength) break;
                 var nextNodeValue = matchType == MatchType.Horizontal ? (x + i, y) : (x, y + i);
                 var nextNode = _grid[nextNodeValue.Item1, nextNodeValue.Item2];
-                if (nextNode == null || currentCandyType != nextNode.GetComponent<INode>().CandyType) break;
+                if (nextNode == null) break;
+                if (!nextNode.TryGetComponent(out INode nextNodeComponent)) { break; }
+                if (!nextNodeComponent.IsActive) break;
+                if (currentCandyType != nextNodeComponent.CandyType) break;
 
                 matchLength++;
                 matchPositions.Add((nextNodeValue.Item1, nextNodeValue.Item2));

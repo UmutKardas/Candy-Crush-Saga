@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using GameCore.Managers;
 using GameCore.Scriptables;
@@ -19,7 +20,7 @@ namespace _Scripts.GameCore.Node
 
         #region Constants
 
-        private const float SwapDuration = 0.3f;
+        private const float SwapDuration = 0.2f;
         private const float DestroyDuration = 0.2f;
 
         #endregion
@@ -30,8 +31,8 @@ namespace _Scripts.GameCore.Node
         public Vector3 Position { get; private set; }
         public int Row { get; set; }
         public int Column { get; set; }
-        public bool IsMatched { get; private set; }
         public Action OnReturnToPool { get; set; }
+        public bool IsActive { get; set; }
 
         #endregion
 
@@ -44,31 +45,32 @@ namespace _Scripts.GameCore.Node
 
         #endregion
 
-        #region INodeAction Methods
+        #region Public Methods
 
         public void Initialize(int row, int column)
         {
             CandyType = candyData.GetRandomCandyType();
-            IsMatched = false;
-            SetGridPosition(row, column);
+            IsActive = true;
+            SetGridPosition(row, column, transform.position);
             UpdateSpriteAsync(GetCandySpriteReference(CandyType));
         }
 
-        public void SetGridPosition(int row, int column)
+        public void SetGridPosition(int row, int column, Vector3 position)
         {
             Row = row;
             Column = column;
-            Position = transform.position;
+            Position = position;
         }
 
-        public void SetMatch()
+        public async UniTask SetMatch()
         {
-            PlayDestroyAnimation(Reset);
+            await DOTweenHelpers.WaitForSequenceCompletion(PlayScaleAnimation(Reset));
         }
-        public Sequence Swap(INodeDetails otherNode)
+
+        public Sequence Swap(Vector3 position, float? customDuration = null)
         {
             return DOTween.Sequence()
-                .Append(transform.DOMove(otherNode.Position, SwapDuration).SetEase(Ease.Linear));
+                .Append(transform.DOMove(position, customDuration ?? SwapDuration).SetEase(Ease.Linear));
         }
 
 
@@ -76,6 +78,7 @@ namespace _Scripts.GameCore.Node
         {
             spriteRenderer.transform.localScale = Vector3.one;
             OnReturnToPool?.Invoke();
+            IsActive = false;
         }
 
         #endregion
@@ -95,10 +98,14 @@ namespace _Scripts.GameCore.Node
         }
 
 
-        private void PlayDestroyAnimation(Action onComplete = null)
+        private Sequence PlayScaleAnimation(Action onComplete = null)
         {
-            spriteRenderer.transform.DOScale(Vector3.zero, DestroyDuration).OnComplete(() => { onComplete?.Invoke(); });
+            var sequence = DOTween.Sequence();
+            sequence.Append(spriteRenderer.transform.DOScale(Vector3.zero, DestroyDuration).OnComplete(() => { onComplete?.Invoke(); }));
+            return sequence;
         }
+
+
         #endregion
     }
 }
