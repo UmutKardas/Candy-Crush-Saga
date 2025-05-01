@@ -492,6 +492,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 46706c81711243ba99effdda6ed68450, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  gridManager: {fileID: 254531277}
   nodeLayer:
     serializedVersion: 2
     m_Bits: 8

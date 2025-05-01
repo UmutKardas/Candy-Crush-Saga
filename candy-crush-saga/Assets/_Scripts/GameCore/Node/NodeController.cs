@@ -47,12 +47,13 @@ namespace _Scripts.GameCore.Node
 
         #region Public Methods
 
-        public void Initialize(int row, int column)
+        public void Initialize(int row, int column, bool isAnimate = false)
         {
+            spriteRenderer.transform.localScale = Vector3.zero;
             CandyType = candyData.GetRandomCandyType();
             IsActive = true;
             SetGridPosition(row, column, transform.position);
-            UpdateSpriteAsync(GetCandySpriteReference(CandyType));
+            UpdateSpriteAsync(GetCandySpriteReference(CandyType), isAnimate);
         }
 
         public void SetGridPosition(int row, int column, Vector3 position)
@@ -64,7 +65,7 @@ namespace _Scripts.GameCore.Node
 
         public async UniTask SetMatch()
         {
-            await DOTweenHelpers.WaitForSequenceCompletion(PlayScaleAnimation(Reset));
+            await DOTweenHelpers.WaitForSequenceCompletion(PlayScaleAnimation(Vector3.zero, Reset));
         }
 
         public Sequence Swap(Vector3 position, float? customDuration = null)
@@ -85,11 +86,11 @@ namespace _Scripts.GameCore.Node
 
         #region Private Methods
 
-        private async void UpdateSpriteAsync(UnityEngine.AddressableAssets.AssetReference assetReference)
+        private async void UpdateSpriteAsync(UnityEngine.AddressableAssets.AssetReference assetReference, bool isAnimate = false)
         {
             var sprite = await AddressableManager.LoadAssetAsync<Sprite>(assetReference);
             spriteRenderer.sprite = sprite;
-            spriteRenderer.transform.localScale = Vector3.one;
+            PlayScaleAnimation(Vector2.one, null);
         }
 
         private UnityEngine.AddressableAssets.AssetReference GetCandySpriteReference(CandyType type)
@@ -98,10 +99,10 @@ namespace _Scripts.GameCore.Node
         }
 
 
-        private Sequence PlayScaleAnimation(Action onComplete = null)
+        private Sequence PlayScaleAnimation(Vector3 scale, Action onComplete = null)
         {
             var sequence = DOTween.Sequence();
-            sequence.Append(spriteRenderer.transform.DOScale(Vector3.zero, DestroyDuration).OnComplete(() => { onComplete?.Invoke(); }));
+            sequence.Append(spriteRenderer.transform.DOScale(scale, DestroyDuration).OnComplete(() => { onComplete?.Invoke(); }));
             return sequence;
         }
 
