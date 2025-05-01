@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Cysharp.Threading.Tasks;
 using Interface;
 using UnityEngine;
@@ -8,11 +9,16 @@ namespace GameCore.Managers
 {
     public class GridManager : MonoBehaviour
     {
+        #region Actions
+        public event Action<List<HashSet<(int, int)>>> OnMatchFound;
+        #endregion
+
         #region Serialized Fields
 
         [SerializeField] private InputManager inputManager;
         [SerializeField] private GameManager gameManager;
         [SerializeField] private StrategyManager strategyManager;
+        [SerializeField] private GameObject gridPrefab;
 
         #endregion
 
@@ -50,11 +56,17 @@ namespace GameCore.Managers
             {
                 for (var j = 0; j < Columns; j++)
                 {
+                    SpawnGridCell(i, j);
                     SpawnNodeAt(i, j);
                 }
             }
 
             ValidateMatches().Forget();
+        }
+
+        private void SpawnGridCell(int row, int column)
+        {
+            Instantiate(gridPrefab, CalculateNodeWorldPosition(row, column), Quaternion.identity, transform);
         }
 
         private void SpawnNodeAt(int rows, int columns, bool isAnimate = false)
@@ -63,7 +75,7 @@ namespace GameCore.Managers
             var node = pooledObject.Instance;
             node.transform.position = CalculateNodeWorldPosition(rows, columns);
             var nodeComponent = node.GetComponent<INode>();
-            nodeComponent.Initialize(rows, columns);
+            nodeComponent.Initialize(rows, columns, isAnimate);
             nodeComponent.OnReturnToPool = () =>
             {
                 PoolManager.ReturnPoolObject(PoolType.Candy, pooledObject);
@@ -100,23 +112,18 @@ namespace GameCore.Managers
 
         private async UniTask ValidateMatches(Action onComplete = null, Action onFailed = null)
         {
-            var matches = strategyManager.CheckMatches(Grid, Rows, Columns);
+            var matchesGroup = strategyManager.CheckMatches(Grid, Rows, Columns);
 
-            if (matches is not { Count: > 0 })
+            if (matchesGroup is not { Count: > 0 })
             {
                 onFailed?.Invoke();
                 return;
             }
-
-            var tasks = new List<UniTask>();
-
-            foreach (var (row, column) in matches)
-            {
-                var node = Grid[row, column].GetComponent<INode>();
-                tasks.Add(node.SetMatch());
-            }
+            OnMatchFound?.Invoke(matchesGroup);
+            var tasks = matchesGroup.SelectMany(group => group).Select(pos => Grid[pos.Item1, pos.Item2].GetComponent<INode>().SetMatch()).ToList();
 
             await UniTask.WhenAll(tasks);
+
             await HandlePostMatch();
             onComplete?.Invoke();
 
